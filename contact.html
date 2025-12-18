@@ -8,37 +8,31 @@
 body {
   font-family: Arial, sans-serif;
   margin:0;
-  padding:0;
   background:#f4f6f8;
   color:#222;
 }
 header {
   background:#005b88;
-  padding:40px 20px;
   color:white;
   text-align:center;
-}
-header h1 {
-  margin:0;
-  font-size:28px;
+  padding:36px 20px;
 }
 nav {
   background:#0077aa;
-  padding:14px;
   text-align:center;
+  padding:12px;
 }
 nav a {
   color:white;
-  margin:0 18px;
+  margin:0 16px;
   text-decoration:none;
   font-weight:bold;
-  font-size:17px;
 }
 .section {
   max-width:700px;
   margin:40px auto;
-  padding:40px 30px;
   background:white;
+  padding:40px 30px;
   border-radius:12px;
   box-shadow:0 2px 5px rgba(0,0,0,0.15);
 }
@@ -46,27 +40,25 @@ nav a {
   font-size:16px;
   line-height:1.8;
 }
-form {
-  margin-top:30px;
-}
 label {
   display:block;
-  margin-bottom:6px;
+  margin-top:18px;
   font-weight:bold;
 }
 input, textarea {
   width:100%;
   padding:10px;
-  margin-bottom:20px;
+  margin-top:6px;
   border:1px solid #ccc;
   border-radius:6px;
   font-size:15px;
 }
 button {
+  margin-top:25px;
   background:#005b88;
   color:white;
   border:none;
-  padding:12px 25px;
+  padding:12px 26px;
   font-size:16px;
   border-radius:6px;
   cursor:pointer;
@@ -75,9 +67,8 @@ footer {
   background:#004766;
   color:white;
   text-align:center;
-  padding:26px 15px;
+  padding:24px 15px;
   font-size:14px;
-  line-height:1.7;
 }
 </style>
 </head>
@@ -99,27 +90,39 @@ footer {
 <div class="section">
   <p>
     사회적협동조합 함께행복한동네는
-    지역의 돌봄·의료 기관, 단체, 사업자와의
-    다양한 협력을 기다리고 있습니다.
-    제휴 및 협력과 관련된 문의를 남겨주시면
-    확인 후 연락드리겠습니다.
+    돌봄·의료·지역 기관과의 협력을 통해
+    모두의 건강을 함께 만들어가고자 합니다.
+    아래 양식을 작성해 주시면 확인 후 연락드리겠습니다.
   </p>
 
-  <form action="https://formspree.io/f/xdannlqk" method="POST">
-    <label for="name">이름</label>
-    <input type="text" id="name" name="name" required>
+  <form action="https://formspree.io/f/xdannlqk" method="POST"
+        onsubmit="composeMessage()">
 
-    <label for="organization">기관 / 단체명</label>
-    <input type="text" id="organization" name="organization">
+    <!-- 제목 설정 -->
+    <input type="hidden" name="_subject" id="subject">
 
-    <label for="phone">전화번호</label>
-    <input type="tel" id="phone" name="phone" placeholder="010-0000-0000">
+    <!-- 실제 전송될 메시지 -->
+    <input type="hidden" name="message" id="finalMessage">
 
-    <label for="email">이메일</label>
-    <input type="email" id="email" name="email" required>
+    <label>이름
+      <input type="text" id="name" required>
+    </label>
 
-    <label for="message">문의 내용</label>
-    <textarea id="message" name="message" rows="6" required></textarea>
+    <label>기관 / 단체명
+      <input type="text" id="org">
+    </label>
+
+    <label>전화번호
+      <input type="tel" id="phone" placeholder="010-0000-0000">
+    </label>
+
+    <label>이메일
+      <input type="email" id="email" required>
+    </label>
+
+    <label>문의 내용
+      <textarea id="content" rows="6" required></textarea>
+    </label>
 
     <button type="submit">문의 보내기</button>
   </form>
@@ -127,12 +130,31 @@ footer {
 
 <footer>
   <div>© 2025 사회적협동조합 함께행복한동네</div>
-  <div>
-    주소: 경기도 남양주시 덕송3로 30, 별가람1-2단지 1202동 1층<br>
-    (남양주시 사회적경제창업지원센터 씨-3호, 별내동)
-  </div>
-  <div>전화: 031-572-7579</div>
+  <div>경기도 남양주시 덕송3로 30, 별가람1-2단지 1202동 1층</div>
+  <div>전화 031-572-7579</div>
 </footer>
+
+<script>
+function composeMessage(){
+  const name = document.getElementById('name').value;
+  const org = document.getElementById('org').value;
+  const phone = document.getElementById('phone').value;
+  const email = document.getElementById('email').value;
+  const content = document.getElementById('content').value;
+
+  document.getElementById('subject').value =
+    `[제휴문의] ${org || '기관 미기재'} / ${name}`;
+
+  document.getElementById('finalMessage').value =
+`이름: ${name}
+기관/단체: ${org}
+전화번호: ${phone}
+이메일: ${email}
+
+문의 내용:
+${content}`;
+}
+</script>
 
 </body>
 </html>
