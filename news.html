@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>사회적협동조합 함께행복한동네 - 소식·자료실</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body {
+  font-family: Arial, sans-serif;
+  margin:0;
+  padding:0;
+  background:#f4f6f8;
+  color:#222;
+}
+header {
+  background:#005b88;
+  padding:40px 20px;
+  color:white;
+  text-align:center;
+}
+header h1 {
+  margin:0;
+  font-size:28px;
+}
+nav {
+  background:#0077aa;
+  padding:14px;
+  text-align:center;
+}
+nav a {
+  color:white;
+  margin:0 18px;
+  text-decoration:none;
+  font-weight:bold;
+  font-size:17px;
+}
+.section {
+  max-width:900px;
+  margin:40px auto;
+  padding:40px 25px;
+  background:white;
+  border-radius:12px;
+  box-shadow:0 2px 5px rgba(0,0,0,0.15);
+}
+table {
+  width:100%;
+  border-collapse:collapse;
+}
+th, td {
+  padding:12px 8px;
+  border-bottom:1px solid #ddd;
+  text-align:left;
+}
+th {
+  background:#f0f3f6;
+}
+.pagination {
+  margin-top:30px;
+  text-align:center;
+  font-size:15px;
+}
+.pagination button {
+  margin:0 5px;
+  padding:6px 12px;
+  border:none;
+  background:#0077aa;
+  color:white;
+  cursor:pointer;
+  border-radius:4px;
+}
+.pagination button:disabled {
+  background:#ccc;
+  cursor:default;
+}
+.page-info {
+  margin-top:12px;
+  text-align:center;
+  font-size:14px;
+  color:#555;
+}
+footer {
+  background:#004766;
+  color:white;
+  text-align:center;
+  padding:26px 15px;
+  font-size:14px;
+  line-height:1.7;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>소식·자료실</h1>
+</header>
+
+<nav>
+  <a href="index.html">홈</a>
+  <a href="intro.html">조합소개</a>
+  <a href="business.html">사업소개</a>
+  <a href="news.html">소식·자료실</a>
+  <a href="contact.html">제휴문의</a>
+</nav>
+
+<div class="section">
+  <table>
+    <thead>
+      <tr>
+        <th style="width:15%">구분</th>
+        <th>제목</th>
+        <th style="width:20%">날짜</th>
+      </tr>
+    </thead>
+    <tbody id="news-list">
+    </tbody>
+  </table>
+
+  <div class="pagination">
+    <button id="prevBtn">이전</button>
+    <span id="pageNumbers"></span>
+    <button id="nextBtn">다음</button>
+  </div>
+
+  <div class="page-info" id="pageInfo"></div>
+</div>
+
+<footer>
+  <div>© 2025 사회적협동조합 함께행복한동네</div>
+  <div>
+    주소: 경기도 남양주시 덕송3로 30, 별가람1-2단지 1202동 1층<br>
+    (남양주시 사회적경제창업지원센터 씨-3호, 별내동)
+  </div>
+  <div>전화: 031-572-7579</div>
+</footer>
+
+<script>
+const ITEMS_PER_PAGE = 10;
+let currentPage = 1;
+let data = [];
+
+fetch('list.json')
+  .then(res => res.json())
+  .then(json => {
+    data = json.sort((a, b) => new Date(b.date) - new Date(a.date));
+    render();
+  });
+
+function render() {
+  const start = (currentPage - 1) * ITEMS_PER_PAGE;
+  const end = start + ITEMS_PER_PAGE;
+  const pageItems = data.slice(start, end);
+
+  const tbody = document.getElementById('news-list');
+  tbody.innerHTML = '';
+
+  pageItems.forEach(item => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td>${item.type}</td>
+      <td><a href="${item.file}">${item.title}</a></td>
+      <td>${item.date}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  renderPagination();
+}
+
+function renderPagination() {
+  const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
+  document.getElementById('pageInfo').innerText =
+    `전체 ${totalPages}페이지 중 ${currentPage}페이지`;
+
+  document.getElementById('prevBtn').disabled = currentPage === 1;
+  document.getElementById('nextBtn').disabled = currentPage === totalPages;
+
+  document.getElementById('prevBtn').onclick = () => {
+    if (currentPage > 1) {
+      currentPage--;
+      render();
+    }
+  };
+
+  document.getElementById('nextBtn').onclick = () => {
+    if (currentPage < totalPages) {
+      currentPage++;
+      render();
+    }
+  };
+
+  const pageNumbers = document.getElementById('pageNumbers');
+  pageNumbers.innerHTML = '';
+  for (let i = 1; i <= totalPages; i++) {
+    if (i === currentPage) {
+      pageNumbers.innerHTML += `<strong>${i}</strong> `;
+    } else {
+      pageNumbers.innerHTML += `<a href="#" onclick="goPage(${i})">${i}</a> `;
+    }
+  }
+}
+
+function goPage(n) {
+  currentPage = n;
+  render();
+}
+</script>
+
+</body>
+</html>
