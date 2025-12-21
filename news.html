@@ -107,6 +107,7 @@ footer {
   <table>
     <thead>
       <tr>
+        <th style="width:10%">번호</th>
         <th style="width:15%">구분</th>
         <th>제목</th>
         <th style="width:20%">날짜</th>
@@ -154,9 +155,11 @@ function render() {
   const tbody = document.getElementById('news-list');
   tbody.innerHTML = '';
 
-  pageItems.forEach(item => {
+  pageItems.forEach((item, index) => {
     const tr = document.createElement('tr');
+    const number = data.length - ((currentPage - 1) * ITEMS_PER_PAGE + index);
     tr.innerHTML = `
+      <td>${number}</td>
       <td>${item.type}</td>
       <td><a href="${item.file}">${item.title}</a></td>
       <td>${item.date}</td>
