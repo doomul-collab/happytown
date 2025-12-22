@@ -2,15 +2,29 @@
   {
     "id": 1,
     "type": "공지",
-    "title": "2026년 1월부터 남양주시 별내 창업보육센터 입주 연장 안내",
-    "date": "2025-12-18",
-    "file": "20251218_notice_incubation_extension.html"
+    "title": "조합 활동 재정비 안내",
+    "date": "2025-12-15",
+    "file": "20251215_notice_reorganization.html"
   },
   {
     "id": 2,
+    "type": "공지",
+    "title": "함께행복한동네 홈페이지 개설 안내",
+    "date": "2025-12-15",
+    "file": "20251215_notice_homepage_open.html"
+  },
+  {
+    "id": 3,
+    "type": "소식",
+    "title": "남양주시 창업센터 이전 소식",
+    "date": "2025-12-15",
+    "file": "20251215_news_relocation.html"
+  },
+  {
+    "id": 4,
     "type": "자료",
-    "title": "조합 연혁 업데이트 안내",
-    "date": "2025-12-18",
-    "file": "20251218_history_update.html"
+    "title": "우리 조합 제작 노년운동법 예방 자료집(평생 건강을 위한 근육운동)",
+    "date": "2025-12-15",
+    "file": "20251215_material_senior_exercise_guide.html"
   }
 ]
