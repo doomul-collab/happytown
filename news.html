@@ -34,49 +34,15 @@ nav a {
   font-weight:bold;
   font-size:17px;
 }
+/* 패들렛이 들어갈 하얀색 구역 설정 */
 .section {
-  max-width:900px;
+  max-width:1000px; /* 게시판을 조금 더 넓게 보기 위해 수정했습니다 */
   margin:40px auto;
-  padding:40px 25px;
+  padding:20px;
   background:white;
   border-radius:12px;
   box-shadow:0 2px 5px rgba(0,0,0,0.15);
-}
-table {
-  width:100%;
-  border-collapse:collapse;
-}
-th, td {
-  padding:12px 8px;
-  border-bottom:1px solid #ddd;
-  text-align:left;
-}
-th {
-  background:#f0f3f6;
-}
-.pagination {
-  margin-top:30px;
-  text-align:center;
-  font-size:15px;
-}
-.pagination button {
-  margin:0 5px;
-  padding:6px 12px;
-  border:none;
-  background:#0077aa;
-  color:white;
-  cursor:pointer;
-  border-radius:4px;
-}
-.pagination button:disabled {
-  background:#ccc;
-  cursor:default;
-}
-.page-info {
-  margin-top:12px;
-  text-align:center;
-  font-size:14px;
-  color:#555;
+  overflow: hidden; /* 테두리 밖으로 나가지 않게 설정 */
 }
 footer {
   background:#004766;
@@ -85,6 +51,12 @@ footer {
   padding:26px 15px;
   font-size:14px;
   line-height:1.7;
+}
+/* 패들렛 액자(iframe) 스타일 */
+.padlet-container {
+  width: 100%;
+  height: 800px; /* 게시판 높이입니다. 필요시 숫자를 조절하세요 */
+  border: none;
 }
 </style>
 </head>
@@ -104,26 +76,12 @@ footer {
 </nav>
 
 <div class="section">
-  <table>
-    <thead>
-      <tr>
-        <th style="width:10%">번호</th>
-        <th style="width:15%">구분</th>
-        <th>제목</th>
-        <th style="width:20%">날짜</th>
-      </tr>
-    </thead>
-    <tbody id="news-list">
-    </tbody>
-  </table>
-
-  <div class="pagination">
-    <button id="prevBtn">이전</button>
-    <span id="pageNumbers"></span>
-    <button id="nextBtn">다음</button>
-  </div>
-
-  <div class="page-info" id="pageInfo"></div>
+  <iframe 
+    src="https://padlet.com/doomul/remake-link/47wMbpdeK6MxbrBm" 
+    class="padlet-container"
+    allow="camera;microphone;geolocation"
+    title="사회적협동조합 함께행복한동네 소식/자료실">
+  </iframe>
 </div>
 
 <footer>
@@ -134,80 +92,6 @@ footer {
   </div>
   <div>전화: 031-572-7579</div>
 </footer>
-
-<script>
-const ITEMS_PER_PAGE = 10;
-let currentPage = 1;
-let data = [];
-
-fetch('list.json')
-  .then(res => res.json())
-  .then(json => {
-    data = json.sort((a, b) => new Date(b.date) - new Date(a.date));
-    render();
-  });
-
-function render() {
-  const start = (currentPage - 1) * ITEMS_PER_PAGE;
-  const end = start + ITEMS_PER_PAGE;
-  const pageItems = data.slice(start, end);
-
-  const tbody = document.getElementById('news-list');
-  tbody.innerHTML = '';
-
-  pageItems.forEach((item, index) => {
-    const tr = document.createElement('tr');
-    const number = data.length - ((currentPage - 1) * ITEMS_PER_PAGE + index);
-    tr.innerHTML = `
-      <td>${number}</td>
-      <td>${item.type}</td>
-      <td><a href="${item.file}">${item.title}</a></td>
-      <td>${item.date}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  renderPagination();
-}
-
-function renderPagination() {
-  const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
-  document.getElementById('pageInfo').innerText =
-    `전체 ${totalPages}페이지 중 ${currentPage}페이지`;
-
-  document.getElementById('prevBtn').disabled = currentPage === 1;
-  document.getElementById('nextBtn').disabled = currentPage === totalPages;
-
-  document.getElementById('prevBtn').onclick = () => {
-    if (currentPage > 1) {
-      currentPage--;
-      render();
-    }
-  };
-
-  document.getElementById('nextBtn').onclick = () => {
-    if (currentPage < totalPages) {
-      currentPage++;
-      render();
-    }
-  };
-
-  const pageNumbers = document.getElementById('pageNumbers');
-  pageNumbers.innerHTML = '';
-  for (let i = 1; i <= totalPages; i++) {
-    if (i === currentPage) {
-      pageNumbers.innerHTML += `<strong>${i}</strong> `;
-    } else {
-      pageNumbers.innerHTML += `<a href="#" onclick="goPage(${i})">${i}</a> `;
-    }
-  }
-}
-
-function goPage(n) {
-  currentPage = n;
-  render();
-}
-</script>
 
 </body>
 </html>
