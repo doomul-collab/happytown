@@ -5,75 +5,43 @@
 <title>사회적협동조합 함께행복한동네 - 소식·자료실</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <style>
-body {
-  font-family: Arial, sans-serif;
-  margin:0;
-  padding:0;
-  background:#f4f6f8;
-  color:#222;
-}
-header {
-  background:#005b88;
-  padding:40px 20px;
-  color:white;
-  text-align:center;
-}
-header h1 {
-  margin:0;
-  font-size:28px;
-}
-nav {
-  background:#0077aa;
-  padding:14px;
-  text-align:center;
-}
-nav a {
-  color:white;
-  margin:0 18px;
-  text-decoration:none;
-  font-weight:bold;
-  font-size:17px;
-}
-/* 게시판이 들어갈 구역 설정 */
-.section {
-  max-width:950px;
-  margin:40px auto;
-  background:white;
-  border-radius:12px;
-  box-shadow:0 2px 5px rgba(0,0,0,0.15);
-  /* 구글 배너를 가리기 위한 핵심 설정 */
+body { font-family: Arial, sans-serif; margin:0; padding:0; background:#f4f6f8; color:#222; }
+header { background:#005b88; padding:40px 20px; color:white; text-align:center; }
+header h1 { margin:0; font-size:28px; }
+nav { background:#0077aa; padding:14px; text-align:center; }
+nav a { color:white; margin:0 18px; text-decoration:none; font-weight:bold; font-size:17px; }
+
+/* 게시판 구역: 구글 하단 배너를 가리기 위해 overflow hidden 설정 */
+.section { 
+  max-width:950px; 
+  margin:40px auto; 
+  background:white; 
+  border-radius:12px; 
+  box-shadow:0 2px 5px rgba(0,0,0,0.15); 
   overflow: hidden; 
-  position: relative;
+  position: relative; 
 }
 
-/* 구글 앱 스크립트를 담는 액자(iframe) */
-.board-container {
-  width: 100%;
-  /* 게시판 내용 높이를 넉넉히 잡고, 아래쪽 배너를 프레임 밖으로 밀어냄 */
-  height: 850px; 
-  border: none;
+/* 컨테이너 높이를 실제 게시판보다 작게 잡아 하단 배너를 잘라냄 */
+.board-container { 
+  width: 100%; 
+  height: 820px; 
+  position: relative; 
 }
 
-.board-iframe {
-  width: 100%;
-  height: 950px; /* 실제 iframe 높이를 컨테이너보다 크게 설정하여 하단 가림 */
-  border: none;
-  position: absolute;
-  top: 0;
-  left: 0;
+/* iframe 높이를 더 크게 설정하여 배너가 컨테이너 밖으로 나가게 함 */
+.board-iframe { 
+  width: 100%; 
+  height: 920px; 
+  border: none; 
+  position: absolute; 
+  top: 0; 
+  left: 0; 
 }
 
-footer {
-  background:#004766;
-  color:white;
-  text-align:center;
-  padding:26px 15px;
-  font-size:14px;
-  line-height:1.7;
-}
+footer { background:#004766; color:white; text-align:center; padding:26px 15px; font-size:14px; line-height:1.7; }
 </style>
 </head>
-
 <body>
 
 <header>
@@ -91,9 +59,9 @@ footer {
 <div class="section">
   <div class="board-container">
     <iframe 
-      src="여기에_배포된_웹앱_주소를_넣으세요" 
+      src="https://script.google.com/macros/s/AKfycbyDNtCqvlXco-9q6fIeqdcFjlA6zFSsGpLl0kv5VT-3eoTM07cYzyb73x9aU_gRmM4I/exec" 
       class="board-iframe"
-      title="공지사항 게시판"
+      title="행복한동네 공지사항 게시판"
       scrolling="no">
     </iframe>
   </div>
