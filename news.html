@@ -34,50 +34,35 @@ nav a {
   font-weight:bold;
   font-size:17px;
 }
+/* 게시판이 들어갈 구역 설정 */
 .section {
-  max-width:900px;
+  max-width:950px;
   margin:40px auto;
-  padding:40px 25px;
   background:white;
   border-radius:12px;
   box-shadow:0 2px 5px rgba(0,0,0,0.15);
+  /* 구글 배너를 가리기 위한 핵심 설정 */
+  overflow: hidden; 
+  position: relative;
 }
-table {
-  width:100%;
-  border-collapse:collapse;
+
+/* 구글 앱 스크립트를 담는 액자(iframe) */
+.board-container {
+  width: 100%;
+  /* 게시판 내용 높이를 넉넉히 잡고, 아래쪽 배너를 프레임 밖으로 밀어냄 */
+  height: 850px; 
+  border: none;
 }
-th, td {
-  padding:12px 8px;
-  border-bottom:1px solid #ddd;
-  text-align:left;
+
+.board-iframe {
+  width: 100%;
+  height: 950px; /* 실제 iframe 높이를 컨테이너보다 크게 설정하여 하단 가림 */
+  border: none;
+  position: absolute;
+  top: 0;
+  left: 0;
 }
-th {
-  background:#f0f3f6;
-}
-.pagination {
-  margin-top:30px;
-  text-align:center;
-  font-size:15px;
-}
-.pagination button {
-  margin:0 5px;
-  padding:6px 12px;
-  border:none;
-  background:#0077aa;
-  color:white;
-  cursor:pointer;
-  border-radius:4px;
-}
-.pagination button:disabled {
-  background:#ccc;
-  cursor:default;
-}
-.page-info {
-  margin-top:12px;
-  text-align:center;
-  font-size:14px;
-  color:#555;
-}
+
 footer {
   background:#004766;
   color:white;
@@ -104,26 +89,14 @@ footer {
 </nav>
 
 <div class="section">
-  <table>
-    <thead>
-      <tr>
-        <th style="width:10%">번호</th>
-        <th style="width:15%">구분</th>
-        <th>제목</th>
-        <th style="width:20%">날짜</th>
-      </tr>
-    </thead>
-    <tbody id="news-list">
-    </tbody>
-  </table>
-
-  <div class="pagination">
-    <button id="prevBtn">이전</button>
-    <span id="pageNumbers"></span>
-    <button id="nextBtn">다음</button>
+  <div class="board-container">
+    <iframe 
+      src="여기에_배포된_웹앱_주소를_넣으세요" 
+      class="board-iframe"
+      title="공지사항 게시판"
+      scrolling="no">
+    </iframe>
   </div>
-
-  <div class="page-info" id="pageInfo"></div>
 </div>
 
 <footer>
@@ -134,80 +107,6 @@ footer {
   </div>
   <div>전화: 031-572-7579</div>
 </footer>
-
-<script>
-const ITEMS_PER_PAGE = 10;
-let currentPage = 1;
-let data = [];
-
-fetch('list.json')
-  .then(res => res.json())
-  .then(json => {
-    data = json.sort((a, b) => new Date(b.date) - new Date(a.date));
-    render();
-  });
-
-function render() {
-  const start = (currentPage - 1) * ITEMS_PER_PAGE;
-  const end = start + ITEMS_PER_PAGE;
-  const pageItems = data.slice(start, end);
-
-  const tbody = document.getElementById('news-list');
-  tbody.innerHTML = '';
-
-  pageItems.forEach((item, index) => {
-    const tr = document.createElement('tr');
-    const number = data.length - ((currentPage - 1) * ITEMS_PER_PAGE + index);
-    tr.innerHTML = `
-      <td>${number}</td>
-      <td>${item.type}</td>
-      <td><a href="${item.file}">${item.title}</a></td>
-      <td>${item.date}</td>
-    `;
-    tbody.appendChild(tr);
-  });
-
-  renderPagination();
-}
-
-function renderPagination() {
-  const totalPages = Math.ceil(data.length / ITEMS_PER_PAGE);
-  document.getElementById('pageInfo').innerText =
-    `전체 ${totalPages}페이지 중 ${currentPage}페이지`;
-
-  document.getElementById('prevBtn').disabled = currentPage === 1;
-  document.getElementById('nextBtn').disabled = currentPage === totalPages;
-
-  document.getElementById('prevBtn').onclick = () => {
-    if (currentPage > 1) {
-      currentPage--;
-      render();
-    }
-  };
-
-  document.getElementById('nextBtn').onclick = () => {
-    if (currentPage < totalPages) {
-      currentPage++;
-      render();
-    }
-  };
-
-  const pageNumbers = document.getElementById('pageNumbers');
-  pageNumbers.innerHTML = '';
-  for (let i = 1; i <= totalPages; i++) {
-    if (i === currentPage) {
-      pageNumbers.innerHTML += `<strong>${i}</strong> `;
-    } else {
-      pageNumbers.innerHTML += `<a href="#" onclick="goPage(${i})">${i}</a> `;
-    }
-  }
-}
-
-function goPage(n) {
-  currentPage = n;
-  render();
-}
-</script>
 
 </body>
 </html>
