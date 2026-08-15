@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>반복 시술 타이머</title>
+  <style>
+    body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+    div { margin-bottom: 15px; }
+    label { display: block; font-weight: bold; margin-bottom: 5px; }
+    select, input, button { font-size: 1rem; padding: 10px; width: 100%; box-sizing: border-box; }
+    button { font-weight: bold; cursor: pointer; border: none; border-radius: 5px; }
+    .btn-start { background-color: #4CAF50; color: white; margin-bottom: 10px; }
+    .btn-stop { background-color: #f44336; color: white; }
+    #status { margin-top: 20px; font-size: 1.2rem; font-weight: bold; padding: 10px; border: 1px solid #ccc; text-align: center; }
+  </style>
+</head>
+<body>
+
+  <h2>시술 반복 타이머</h2>
+
+  <div>
+    <label for="mainInterval">본 알람 주기 (분)</label>
+    <select id="mainInterval">
+      <option value="10">10분</option>
+      <option value="20">20분</option>
+      <option value="30">30분</option>
+      <option value="60">60분 (1시간)</option>
+      <option value="90">90분 (1시간 30분)</option>
+      <option value="100">100분</option>
+    </select>
+  </div>
+
+  <div>
+    <label for="preInterval">예비 알람 (본 알람 몇 분 전)</label>
+    <select id="preInterval">
+      <option value="1">1분 전</option>
+      <option value="2">2분 전</option>
+      <option value="3">3분 전</option>
+      <option value="4">4분 전</option>
+      <option value="5">5분 전</option>
+      <option value="6">6분 전</option>
+      <option value="7">7분 전</option>
+      <option value="8">8분 전</option>
+      <option value="9">9분 전</option>
+      <option value="10">10분 전</option>
+    </select>
+  </div>
+
+  <div>
+    <label for="startTime">시작 시간 (기본값: 현재 시각)</label>
+    <input type="time" id="startTime">
+  </div>
+
+  <button class="btn-start" onclick="startTimer()">타이머 시작</button>
+  <button class="btn-stop" onclick="stopTimer()">종료</button>
+
+  <div id="status">대기 중</div>
+
+  <!-- 백그라운드 유지용 무음 루프 오디오 -->
+  <audio id="silentAudio" loop style="display:none;"></audio>
+
+  <script>
+    let timerLoop = null;
+    let isRunning = false;
+    let wakeLock = null;
+    let audioCtx = null;
+
+    window.onload = function() {
+      const now = new Date();
+      const hours = String(now.getHours()).padStart(2, '0');
+      const minutes = String(now.getMinutes()).padStart(2, '0');
+      document.getElementById('startTime').value = `${hours}:${minutes}`;
+
+      // 무음 루프 오디오 생성 (Base64 WAV)
+      const silentAudio = document.getElementById('silentAudio');
+      silentAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==";
+    };
+
+    // 화면 꺼짐 방지 요청
+    async function requestWakeLock() {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await navigator.wakeLock.request('screen');
+        }
+      } catch (err) {
+        console.log(err.name, err.message);
+      }
+    }
+
+    // 화면 꺼짐 방지 해제
+    function releaseWakeLock() {
+      if (wakeLock !== null) {
+        wakeLock.release();
+        wakeLock = null;
+      }
+    }
+
+    // 단일 비프음 재생
+    function playBeep(duration = 0.15, frequency = 880) {
+      return new Promise((resolve) => {
+        try {
+          if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+          }
+          if (audioCtx.state === 'suspended') {
+            audioCtx.resume();
+          }
+          const osc = audioCtx.createOscillator();
+          const gain = audioCtx.createGain();
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
+          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+          osc.connect(gain);
+          gain.connect(audioCtx.destination);
+          osc.start();
+          osc.stop(audioCtx.currentTime + duration);
+          setTimeout(resolve, (duration + 0.05) * 1000);
+        } catch (e) {
+          resolve();
+        }
+      });
+    }
+
+    // 비프음 연속 재생
+    async function playBeepMultiple(count) {
+      for (let i = 0; i < count; i++) {
+        await playBeep(0.12, 880);
+      }
+    }
+
+    // 음성 읽기
+    function speakText(text) {
+      return new Promise((resolve) => {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.cancel();
+          const utterance = new SpeechSynthesisUtterance(text);
+          utterance.lang = 'ko-KR';
+          utterance.rate = 1.0;
+          utterance.onend = resolve;
+          utterance.onerror = resolve;
+          window.speechSynthesis.speak(utterance);
+        } else {
+          resolve();
+        }
+      });
+    }
+
+    // 예비 알람: 비프 2회 + 음성 + 비프 2회
+    async function triggerPreAlarm(preMin) {
+      await playBeepMultiple(2);
+      await speakText(`${preMin}분전`);
+      await playBeepMultiple(2);
+    }
+
+    // 본 알람: 비프 3회 + 음성 + 비프 3회
+    async function triggerMainAlarm(mainMin) {
+      await playBeepMultiple(3);
+      await speakText(`${mainMin}분 종료`);
+      await playBeepMultiple(3);
+    }
+
+    function startTimer() {
+      if (isRunning) {
+        alert("이미 타이머가 작동 중입니다.");
+        return;
+      }
+
+      const mainMin = parseInt(document.getElementById('mainInterval').value);
+      const preMin = parseInt(document.getElementById('preInterval').value);
+      const startTimeVal = document.getElementById('startTime').value;
+
+      if (!startTimeVal) {
+        alert("시작 시간을 설정해 주세요.");
+        return;
+      }
+
+      if (preMin >= mainMin) {
+        alert("예비 알람 시간은 본 알람 주기보다 작아야 합니다.");
+        return;
+      }
+
+      isRunning = true;
+      
+      // 백그라운드 유지용 무음 오디오 재생
+      const silentAudio = document.getElementById('silentAudio');
+      silentAudio.play().catch(e => console.log(e));
+
+      requestWakeLock();
+      document.getElementById('status').innerText = "타이머 작동 중...";
+      speakText("타이머를 시작합니다");
+
+      const [startHour, startMinute] = startTimeVal.split(':').map(Number);
+      let targetTime = new Date();
+      targetTime.setHours(startHour, startMinute, 0, 0);
+
+      const now = new Date();
+      while (targetTime <= now) {
+        targetTime.setMinutes(targetTime.getMinutes() + mainMin);
+      }
+
+      let preAlarmFired = false;
+
+      timerLoop = setInterval(() => {
+        if (!isRunning) return;
+
+        const current = new Date();
+        const diffSec = Math.floor((targetTime - current) / 1000);
+
+        const preSec = preMin * 60;
+        if (diffSec <= preSec && !preAlarmFired) {
+          preAlarmFired = true;
+          triggerPreAlarm(preMin);
+        }
+
+        if (diffSec <= 0) {
+          triggerMainAlarm(mainMin);
+          preAlarmFired = false;
+          targetTime.setMinutes(targetTime.getMinutes() + mainMin);
+        }
+
+        const remainMin = Math.floor(diffSec / 60);
+        const remainSec = diffSec % 60;
+        document.getElementById('status').innerText = 
+          `다음 종료까지 남은 시간: ${remainMin}분 ${remainSec}초`;
+      }, 1000);
+    }
+
+    function stopTimer() {
+      if (timerLoop) {
+        clearInterval(timerLoop);
+        timerLoop = null;
+      }
+      isRunning = false;
+
+      // 무음 오디오 정지
+      const silentAudio = document.getElementById('silentAudio');
+      silentAudio.pause();
+
+      releaseWakeLock();
+      document.getElementById('status').innerText = "타이머가 종료되었습니다.";
+      speakText("타이머를 종료합니다");
+    }
+  </script>
+</body>
+</html>
