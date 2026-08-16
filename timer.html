@@ -57,14 +57,14 @@
 
   <div id="status">대기 중</div>
 
-  <!-- 백그라운드 유지용 무음 루프 오디오 -->
-  <audio id="silentAudio" loop style="display:none;"></audio>
+  <!-- iOS 백그라운드 유지용 무음 오디오 -->
+  <audio id="silentAudio" loop playsinline style="display:none;"></audio>
+  <!-- 비프음 재생용 오디오 -->
+  <audio id="beepAudio" playsinline style="display:none;"></audio>
 
   <script>
     let timerLoop = null;
     let isRunning = false;
-    let wakeLock = null;
-    let audioCtx = null;
 
     window.onload = function() {
       const now = new Date();
@@ -72,64 +72,32 @@
       const minutes = String(now.getMinutes()).padStart(2, '0');
       document.getElementById('startTime').value = `${hours}:${minutes}`;
 
-      // 무음 루프 오디오 생성 (Base64 WAV)
       const silentAudio = document.getElementById('silentAudio');
-      silentAudio.src = "data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==";
+      silentAudio.src = "https://raw.githubusercontent.com/anron/silence-mp3/master/silence-10초.mp3";
+
+      const beepAudio = document.getElementById('beepAudio');
+      beepAudio.src = "https://actions.google.com/sounds/v1/alarms/beep_short.ogg";
     };
 
-    // 화면 꺼짐 방지 요청
-    async function requestWakeLock() {
-      try {
-        if ('wakeLock' in navigator) {
-          wakeLock = await navigator.wakeLock.request('screen');
-        }
-      } catch (err) {
-        console.log(err.name, err.message);
-      }
-    }
-
-    // 화면 꺼짐 방지 해제
-    function releaseWakeLock() {
-      if (wakeLock !== null) {
-        wakeLock.release();
-        wakeLock = null;
-      }
-    }
-
-    // 단일 비프음 재생
-    function playBeep(duration = 0.15, frequency = 880) {
+    // 비프음 재생 함수
+    function playBeepSound() {
       return new Promise((resolve) => {
-        try {
-          if (!audioCtx) {
-            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-          }
-          if (audioCtx.state === 'suspended') {
-            audioCtx.resume();
-          }
-          const osc = audioCtx.createOscillator();
-          const gain = audioCtx.createGain();
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(frequency, audioCtx.currentTime);
-          gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
-          osc.connect(gain);
-          gain.connect(audioCtx.destination);
-          osc.start();
-          osc.stop(audioCtx.currentTime + duration);
-          setTimeout(resolve, (duration + 0.05) * 1000);
-        } catch (e) {
-          resolve();
-        }
+        const beepAudio = document.getElementById('beepAudio');
+        beepAudio.currentTime = 0;
+        beepAudio.play().then(() => {
+          setTimeout(resolve, 300);
+        }).catch(() => resolve());
       });
     }
 
-    // 비프음 연속 재생
+    // 횟수 지정 비프음 연속 재생
     async function playBeepMultiple(count) {
       for (let i = 0; i < count; i++) {
-        await playBeep(0.12, 880);
+        await playBeepSound();
       }
     }
 
-    // 음성 읽기
+    // 음성 읽기 함수 (TTS)
     function speakText(text) {
       return new Promise((resolve) => {
         if ('speechSynthesis' in window) {
@@ -149,14 +117,14 @@
     // 예비 알람: 비프 2회 + 음성 + 비프 2회
     async function triggerPreAlarm(preMin) {
       await playBeepMultiple(2);
-      await speakText(`${preMin}분전`);
+      await speakText(`${preMin}분 전입니다.`);
       await playBeepMultiple(2);
     }
 
     // 본 알람: 비프 3회 + 음성 + 비프 3회
     async function triggerMainAlarm(mainMin) {
       await playBeepMultiple(3);
-      await speakText(`${mainMin}분 종료`);
+      await speakText(`${mainMin}분 시술이 종료되었습니다.`);
       await playBeepMultiple(3);
     }
 
@@ -182,11 +150,9 @@
 
       isRunning = true;
       
-      // 백그라운드 유지용 무음 오디오 재생
       const silentAudio = document.getElementById('silentAudio');
       silentAudio.play().catch(e => console.log(e));
 
-      requestWakeLock();
       document.getElementById('status').innerText = "타이머 작동 중...";
       speakText("타이머를 시작합니다");
 
@@ -233,11 +199,9 @@
       }
       isRunning = false;
 
-      // 무음 오디오 정지
       const silentAudio = document.getElementById('silentAudio');
       silentAudio.pause();
 
-      releaseWakeLock();
       document.getElementById('status').innerText = "타이머가 종료되었습니다.";
       speakText("타이머를 종료합니다");
     }
