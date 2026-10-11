@@ -175,7 +175,7 @@ function load(i,startIdx,autoplay){
   document.title=name(i)+" – 소설 나무공 하나";
   store.c=i; store.i=idx; save();
   ui();
-  if(autoplay) play(); else announce(name(i)+". 스페이스바를 누르면 읽습니다.");
+  if(autoplay) play(); else { releaseLock(); announce(name(i)+". 스페이스바를 누르면 읽습니다."); }
 }
 function goChapter(i,autoplay){
   if(i<0||i>=N) return;
@@ -242,10 +242,37 @@ function speakCurrent(){
 function chapterEnd(){
   playing=false; idx=Math.max(0,sents.length-1); ui();
   if($("auto").checked && cur<N-1){ goChapter(cur+1,true); }
-  else { announce(cur>=N-1?"마지막 장이 끝났습니다.":name(cur)+" 낭독이 끝났습니다."); store.i=0; save(); }
+  else { releaseLock(); announce(cur>=N-1?"마지막 장이 끝났습니다.":name(cur)+" 낭독이 끝났습니다."); store.i=0; save(); }
 }
-function play(){ if(!synth||cur<0) return; playing=true; ui(); speakCurrent(); }
-function pause(){ playing=false; stopSpeech(); ui(); announce("일시정지. "+pctNow()+"퍼센트"); }
+/* ---------- 화면 꺼짐 방지 (Screen Wake Lock) ---------- */
+var wakeLock=null, wakeWarned=false;
+function acquireLock(){
+  if(!("wakeLock" in navigator)){
+    if(!wakeWarned){ wakeWarned=true; announce("이 기기는 화면 꺼짐 방지를 지원하지 않습니다. 화면이 꺼지면 낭독이 멈출 수 있습니다."); }
+    return;
+  }
+  if(wakeLock||document.visibilityState!=="visible") return;
+  navigator.wakeLock.request("screen").then(function(l){
+    wakeLock=l;
+    l.addEventListener("release",function(){ if(wakeLock===l) wakeLock=null; });
+    if(!playing){ releaseLock(); }
+  }).catch(function(){
+    if(!wakeWarned){ wakeWarned=true; announce("화면 꺼짐 방지를 켜지 못했습니다. 저전력 모드를 끄면 도움이 될 수 있습니다."); }
+  });
+}
+function releaseLock(){
+  if(wakeLock){ var l=wakeLock; wakeLock=null; try{ l.release(); }catch(e){} }
+}
+document.addEventListener("visibilitychange",function(){
+  if(document.visibilityState==="visible" && playing){
+    acquireLock();
+    if(synth){ speakCurrent(); }   /* 잠금 등으로 끊겼던 낭독을 현재 문장부터 다시 시작 */
+  }
+});
+window.addEventListener("pageshow",function(){ if(playing){ acquireLock(); if(synth) speakCurrent(); } });
+
+function play(){ if(!synth||cur<0) return; playing=true; acquireLock(); ui(); speakCurrent(); }
+function pause(){ playing=false; stopSpeech(); releaseLock(); ui(); announce("일시정지. "+pctNow()+"퍼센트"); }
 function toggle(){ if(playing) pause(); else play(); }
 
 /* ---------- 5% 이동 ---------- */
