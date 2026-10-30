@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>소식·자료실 관리 - 함께행복한동네</title>
+<style>
+  :root { --main:#005b88; --line:#ddd; --bg:#f6f7f5; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:"Noto Sans KR","Malgun Gothic",sans-serif; background:var(--bg); color:#222; }
+  header { background:var(--main); color:#fff; padding:16px 20px; }
+  header h1 { margin:0; font-size:20px; }
+  main { max-width:860px; margin:0 auto; padding:20px 16px 60px; }
+  section { background:#fff; border:1px solid var(--line); border-radius:10px; padding:20px; margin-bottom:20px; }
+  h2 { margin:0 0 14px; font-size:17px; }
+  label { display:block; font-weight:600; margin:12px 0 6px; font-size:14px; }
+  input[type=text], input[type=password], input[type=date], select, textarea {
+    width:100%; padding:10px; border:1px solid #ccc; border-radius:6px; font-size:15px; font-family:inherit; }
+  textarea { min-height:200px; resize:vertical; }
+  .row { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+  button { padding:10px 18px; border:0; border-radius:6px; background:var(--main); color:#fff; font-size:15px; cursor:pointer; }
+  button.gray { background:#888; }
+  button.red { background:#c0392b; }
+  button.small { padding:5px 10px; font-size:13px; }
+  button:disabled { opacity:.5; cursor:wait; }
+  .msg { margin-top:12px; border-radius:6px; font-size:14px; }
+  .msg.ok { padding:10px; background:#e8f5ec; color:#1e6b3a; }
+  .msg.err { padding:10px; background:#fdecea; color:#a3281b; }
+  table { width:100%; border-collapse:collapse; font-size:14px; }
+  th, td { border-bottom:1px solid var(--line); padding:9px 6px; text-align:left; vertical-align:top; }
+  th { background:#fafafa; }
+  .pin { color:#c0392b; font-weight:700; }
+  .hint { color:#666; font-size:13px; margin-top:6px; }
+  .hidden { display:none; }
+  .sr { position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+</style>
+</head>
+<body>
+<header><h1>함께행복한동네 소식·자료실 관리</h1></header>
+<main>
+
+  <!-- 1. 로그인(토큰) -->
+  <section id="loginBox">
+    <h2>관리자 인증</h2>
+    <label for="token">GitHub 토큰</label>
+    <input type="password" id="token" placeholder="github_pat_로 시작하는 토큰">
+    <div class="row" style="margin-top:10px">
+      <label style="margin:0;font-weight:400"><input type="checkbox" id="remember" checked> 이 컴퓨터에 기억하기</label>
+    </div>
+    <div class="row" style="margin-top:14px">
+      <button id="loginBtn">접속</button>
+    </div>
+    <p class="hint">토큰은 이 브라우저에만 저장되고 GitHub 외 다른 곳으로는 전송되지 않습니다. 공용 PC에서는 '기억하기'를 끄세요.</p>
+    <div id="loginMsg" class="msg" role="status" aria-live="assertive"></div>
+  </section>
+
+  <!-- 2. 작성 폼 -->
+  <section id="editorBox" class="hidden">
+    <h2 id="formTitle">새 공지 작성</h2>
+    <label for="type">분류</label>
+    <select id="type">
+      <option value="공지">공지</option>
+      <option value="소식">소식</option>
+      <option value="자료">자료</option>
+    </select>
+    <label for="title">제목</label>
+    <input type="text" id="title">
+    <div class="row">
+      <div style="flex:1;min-width:160px">
+        <label for="date">날짜</label>
+        <input type="date" id="date">
+      </div>
+      <div style="flex:1;min-width:160px">
+        <label>&nbsp;</label>
+        <label style="font-weight:400;margin:0"><input type="checkbox" id="pinned"> 중요 글로 맨 위에 고정</label>
+      </div>
+    </div>
+    <label for="content">내용</label>
+    <textarea id="content" placeholder="줄바꿈은 그대로 반영됩니다. 링크(https://...)는 자동으로 클릭 가능해집니다."></textarea>
+    <label for="file">첨부파일 (선택, 여러 개 가능)</label>
+    <input type="file" id="file" multiple aria-describedby="fileHint">
+    <p class="hint" id="fileHint">파일 하나당 20MB 이하를 권장합니다. 사진·한글·PDF 모두 가능합니다.</p>
+    <div id="existingFiles" class="hint"></div>
+    <p id="linkNote" class="hint hidden">이 글은 예전에 만든 별도 페이지로 연결됩니다. 분류·제목·날짜·고정 여부만 바뀌고, 본문은 기존 페이지 내용이 그대로 보입니다.</p>
+    <div class="row" style="margin-top:16px">
+      <button id="saveBtn">등록하기</button>
+      <button id="cancelBtn" class="gray hidden">수정 취소</button>
+    </div>
+    <div id="saveMsg" class="msg" role="status" aria-live="assertive"></div>
+  </section>
+
+  <!-- 3. 목록 -->
+  <section id="listBox" class="hidden">
+    <div class="row" style="justify-content:space-between">
+      <h2 style="margin:0">등록된 글</h2>
+      <button class="small gray" id="logoutBtn">로그아웃</button>
+    </div>
+    <table style="margin-top:12px">
+      <caption class="sr">등록된 글 목록, 중요 글과 최신 글 순서</caption>
+      <thead><tr><th style="width:100px">날짜</th><th style="width:60px">분류</th><th>제목</th><th style="width:120px">관리</th></tr></thead>
+      <tbody id="list"></tbody>
+    </table>
+  </section>
+</main>
+
+<script>
+/* ============ 설정: 본인 저장소 정보로 바꾸세요 ============ */
+const CONFIG = {
+  owner:    'doomul-collab',       // GitHub 아이디
+  repo:     'happytown',           // 저장소 이름
+  branch:   'main',                // 브랜치 (보통 main)
+  dataPath: 'data/notices.json',   // 공지 데이터 파일
+  filesDir: 'files/notices'        // 첨부파일 폴더
+};
+/* ======================================================== */
+
+const API = `https://api.github.com/repos/${CONFIG.owner}/${CONFIG.repo}/contents/`;
+let TOKEN = '';
+let notices = [];
+let dataSha = null;
+let editingId = null;
+
+const $ = id => document.getElementById(id);
+
+function store(key, val) { try { val === null ? localStorage.removeItem(key) : localStorage.setItem(key, val); } catch(e){} }
+function load(key) { try { return localStorage.getItem(key) || ''; } catch(e){ return ''; } }
+
+function showMsg(el, text, ok) { el.textContent = text; el.className = 'msg ' + (ok ? 'ok' : 'err'); }
+function encodePath(p) { return p.split('/').map(encodeURIComponent).join('/'); }
+
+function utf8ToB64(str) {
+  const bytes = new TextEncoder().encode(str);
+  let bin = '';
+  for (let i = 0; i < bytes.length; i += 0x8000) bin += String.fromCharCode.apply(null, bytes.subarray(i, i + 0x8000));
+  return btoa(bin);
+}
+function b64ToUtf8(b64) {
+  const bin = atob(b64.replace(/\n/g, ''));
+  return new TextDecoder().decode(Uint8Array.from(bin, c => c.charCodeAt(0)));
+}
+function fileToB64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result.split(',')[1]);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function gh(path, method = 'GET', body) {
+  const url = API + encodePath(path) + (method === 'GET' ? `?ref=${CONFIG.branch}&t=${Date.now()}` : '');
+  const res = await fetch(url, {
+    method,
+    headers: { 'Authorization': 'Bearer ' + TOKEN, 'Accept': 'application/vnd.github+json' },
+    body: body ? JSON.stringify(body) : undefined
+  });
+  if (method === 'GET' && res.status === 404) return null;
+  if (!res.ok) {
+    let detail = '';
+    try { detail = (await res.json()).message; } catch(e){}
+    if (res.status === 401) throw new Error('토큰이 올바르지 않거나 만료되었습니다.');
+    if (res.status === 403) throw new Error('토큰에 쓰기 권한이 없습니다. (Contents: Read and write 필요)');
+    if (res.status === 409) throw new Error('다른 곳에서 동시에 수정되었습니다. 새로고침 후 다시 시도하세요.');
+    throw new Error(`GitHub 오류 ${res.status}: ${detail}`);
+  }
+  return res.json();
+}
+
+async function loadNotices() {
+  const data = await gh(CONFIG.dataPath);
+  if (data) {
+    notices = JSON.parse(b64ToUtf8(data.content));
+    dataSha = data.sha;
+  } else {
+    notices = []; dataSha = null;
+  }
+  renderList();
+}
+
+async function saveNotices(message) {
+  notices.sort((a, b) => ((b.pinned ? 1 : 0) - (a.pinned ? 1 : 0)) || b.date.localeCompare(a.date) || b.id - a.id);
+  const body = { message, content: utf8ToB64(JSON.stringify(notices, null, 2) + '\n'), branch: CONFIG.branch };
+  if (dataSha) body.sha = dataSha;
+  const r = await gh(CONFIG.dataPath, 'PUT', body);
+  dataSha = r.content.sha;
+}
+
+function renderList() {
+  const tb = $('list');
+  if (!notices.length) { tb.innerHTML = '<tr><td colspan="4" style="color:#888">등록된 글이 없습니다.</td></tr>'; return; }
+  tb.innerHTML = notices.map(n => `
+    <tr>
+      <td>${escapeHtml(n.date)}</td>
+      <td>${escapeHtml(n.type || '공지')}</td>
+      <td>${n.pinned ? '<span class="pin">[중요]</span> ' : ''}${escapeHtml(n.title)}
+        ${n.files && n.files.length ? `<div class="hint">첨부 ${n.files.length}개</div>` : ''}</td>
+      <td>
+        <button class="small" onclick="startEdit(${n.id})" aria-label="${escapeHtml(n.title)} 수정">수정</button>
+        <button class="small red" onclick="removeNotice(${n.id})" aria-label="${escapeHtml(n.title)} 삭제">삭제</button>
+      </td>
+    </tr>`).join('');
+}
+
+function resetForm() {
+  editingId = null;
+  $('title').value = ''; $('content').value = ''; $('file').value = '';
+  $('pinned').checked = false;
+  $('type').value = '공지';
+  $('content').disabled = false;
+  $('linkNote').classList.add('hidden');
+  $('date').value = new Date(Date.now() + 9 * 3600 * 1000).toISOString().slice(0, 10);
+  $('formTitle').textContent = '새 글 작성';
+  $('saveBtn').textContent = '등록하기';
+  $('cancelBtn').classList.add('hidden');
+  $('existingFiles').innerHTML = '';
+}
+
+function startEdit(id) {
+  const n = notices.find(x => x.id === id);
+  if (!n) return;
+  editingId = id;
+  $('title').value = n.title; $('content').value = n.content;
+  $('date').value = n.date; $('pinned').checked = !!n.pinned; $('file').value = '';
+  $('type').value = n.type || '공지';
+  $('content').disabled = !!n.link;
+  $('linkNote').classList.toggle('hidden', !n.link);
+  $('formTitle').textContent = '글 수정: ' + n.title;
+  $('saveBtn').textContent = '수정 저장';
+  $('cancelBtn').classList.remove('hidden');
+  $('existingFiles').innerHTML = (n.files || []).length
+    ? '기존 첨부: ' + n.files.map(f => escapeHtml(f.name)).join(', ') + ' (새 파일을 선택하면 추가됩니다)'
+    : '';
+  $('title').focus();
+}
+
+async function removeNotice(id) {
+  const n = notices.find(x => x.id === id);
+  if (!n || !confirm(`"${n.title}" 글을 목록에서 삭제할까요?`)) return;
+  try {
+    await loadNotices();
+    notices = notices.filter(x => x.id !== id);
+    await saveNotices('글 삭제: ' + n.title);
+    renderList();
+    showMsg($('saveMsg'), '삭제되었습니다. 사이트 반영까지 1~2분 걸립니다.', true);
+  } catch (e) { showMsg($('saveMsg'), e.message, false); }
+}
+
+async function uploadFiles(fileList) {
+  const result = [];
+  for (const f of fileList) {
+    if (f.size > 25 * 1024 * 1024) throw new Error(`${f.name}: 파일이 너무 큽니다 (25MB 이하).`);
+    const safe = f.name.replace(/[^\w.\-가-힣]/g, '_');
+    const path = `${CONFIG.filesDir}/${Date.now()}-${safe}`;
+    await gh(path, 'PUT', { message: '첨부 업로드: ' + f.name, content: await fileToB64(f), branch: CONFIG.branch });
+    result.push({ name: f.name, path });
+  }
+  return result;
+}
+
+$('saveBtn').onclick = async () => {
+  const title = $('title').value.trim();
+  const content = $('content').value;
+  const date = $('date').value;
+  const type = $('type').value;
+  if (!title) { showMsg($('saveMsg'), '제목을 입력하세요.', false); return $('title').focus(); }
+  if (!date) return showMsg($('saveMsg'), '날짜를 입력하세요.', false);
+
+  const btn = $('saveBtn');
+  btn.disabled = true; btn.textContent = '저장 중...';
+  try {
+    const newFiles = await uploadFiles($('file').files);
+    await loadNotices(); // 최신 상태로 다시 읽어서 충돌 방지
+    if (editingId) {
+      const n = notices.find(x => x.id === editingId);
+      if (!n) throw new Error('수정할 공지를 찾을 수 없습니다.');
+      Object.assign(n, { type, title, date, pinned: $('pinned').checked });
+      if (!n.link) n.content = content;
+      n.files = (n.files || []).concat(newFiles);
+      await saveNotices('글 수정: ' + title);
+    } else {
+      notices.push({ id: Date.now(), type, title, date, pinned: $('pinned').checked, content, files: newFiles });
+      await saveNotices(type + ' 등록: ' + title);
+    }
+    renderList();
+    resetForm();
+    showMsg($('saveMsg'), '저장되었습니다! 사이트에는 1~2분 뒤 반영됩니다.', true);
+  } catch (e) {
+    showMsg($('saveMsg'), e.message, false);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = editingId ? '수정 저장' : '등록하기';
+  }
+};
+
+$('cancelBtn').onclick = () => { resetForm(); $('title').focus(); };
+
+async function login(tok) {
+  TOKEN = tok;
+  try {
+    await loadNotices();
+    if ($('remember').checked) store('schhd_gh_token', tok); else store('schhd_gh_token', null);
+    $('loginBox').classList.add('hidden');
+    $('editorBox').classList.remove('hidden');
+    $('listBox').classList.remove('hidden');
+    resetForm();
+    $('title').focus();
+  } catch (e) {
+    TOKEN = '';
+    $('loginBox').classList.remove('hidden');
+    showMsg($('loginMsg'), e.message, false);
+  }
+}
+
+$('loginBtn').onclick = () => {
+  const t = $('token').value.trim();
+  if (!t) return showMsg($('loginMsg'), '토큰을 입력하세요.', false);
+  login(t);
+};
+$('logoutBtn').onclick = () => { store('schhd_gh_token', null); location.reload(); };
+
+const saved = load('schhd_gh_token');
+if (saved) login(saved);
+</script>
+</body>
+</html>
